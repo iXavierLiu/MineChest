@@ -28,11 +28,14 @@ public class Main extends JavaPlugin implements Listener {
     @EventHandler
     public void onInventoryOpen(InventoryOpenEvent event) {
         Inventory inventory = event.getInventory();
-        if (inventory.getType() != InventoryType.CHEST) {
-            return;
-        }
-        ItemStack[] contents = inventory.getContents();
 
+        InventoryType inventoryType = inventory.getType();
+        if (inventoryType != InventoryType.CHEST &&
+                inventoryType != InventoryType.SHULKER_BOX &&
+                inventoryType != InventoryType.ENDER_CHEST) return;
+
+
+        ItemStack[] contents = inventory.getContents();
         // combine same block
         for (int i = 0; i < contents.length; i++) {
             ItemStack target = contents[i];

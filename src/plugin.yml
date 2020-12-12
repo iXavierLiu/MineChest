@@ -1,6 +1,6 @@
 name: MineChest
 website: http://github.com/errcodex/MineChest/
-version: 0.0.1-alpha
+version: 0.0.1-beta
 author: errcodex
 main: com.github.errcodex.MineChest.Main
 api-version: 1.16
