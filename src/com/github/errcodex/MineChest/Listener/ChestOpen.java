@@ -1,4 +1,4 @@
-package com.github.errcodex.MineChest;
+package com.github.errcodex.MineChest.Listener;
 
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -6,25 +6,12 @@ import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 
-
-public class Main extends JavaPlugin implements Listener {
-    @Override
-    public void onEnable() {
-        getServer().getPluginManager().registerEvents(this, this);
-        getLogger().info("MineChest loaded!");
-    }
-
-    @Override
-    public void onDisable() {
-        getLogger().info("MineChest disabled!");
-    }
-
+public class ChestOpen implements Listener {
     @EventHandler
     public void onInventoryOpen(InventoryOpenEvent event) {
         Inventory inventory = event.getInventory();
@@ -40,7 +27,6 @@ public class Main extends JavaPlugin implements Listener {
         for (int i = 0; i < contents.length; i++) {
             ItemStack target = contents[i];
             if (target == null) continue;
-            ;
             for (int j = i + 1; j < contents.length; j++) {
                 ItemStack current = contents[j];
                 if (current == null) continue;
@@ -75,5 +61,6 @@ public class Main extends JavaPlugin implements Listener {
             }
         });
         inventory.setContents(contents);
+
     }
 }
