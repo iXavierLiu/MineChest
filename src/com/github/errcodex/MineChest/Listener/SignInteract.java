@@ -1,6 +1,5 @@
 package com.github.errcodex.MineChest.Listener;
 
-import com.github.errcodex.MineChest.MineChest;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -12,11 +11,16 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
 public class SignInteract implements Listener {
+    private static Plugin plugin;
+    public SignInteract(Plugin plugin){
+        SignInteract.plugin=plugin;
+    }
     @EventHandler
     public void onPlayerInteract(final PlayerInteractEvent event) {
         // 棍子触发
@@ -61,7 +65,7 @@ public class SignInteract implements Listener {
         if (tip.isEmpty()) return;
         tip=tip.substring(3);
         event.getPlayer().sendMessage("[MineChest] 你向告示牌上写了\"" + tip + "\"");
-        MineChest.getPlugin().getLogger().info(event.getPlayer().getName() + "向告示牌上写了\"" + tip + "\"");
+        plugin.getLogger().info(event.getPlayer().getName() + "向告示牌上写了\"" + tip + "\"");
         sign.update();
     }
 

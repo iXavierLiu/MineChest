@@ -1,6 +1,5 @@
 package com.github.errcodex.MineChest.Listener;
 
-import com.github.errcodex.MineChest.MineChest;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -12,7 +11,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.Plugin;
 
 import java.util.ArrayList;
 import java.util.regex.Matcher;
@@ -21,6 +20,12 @@ import java.util.regex.Pattern;
 public class ChestInteract implements Listener {
     private static final String pluginName = "MineChest";
     static final String classificationTag = "分类";
+    private static Plugin plugin;
+
+    public ChestInteract(Plugin plugin) {
+        ChestInteract.plugin = plugin;
+    }
+
     @EventHandler
     public void onPlayerInteract(final PlayerInteractEvent event) {
         // 棍子触发
@@ -67,7 +72,7 @@ public class ChestInteract implements Listener {
         yRange = Math.abs(Integer.parseInt(m.group(1)));
         xzRange = Math.abs(Integer.parseInt(m.group(2)));
         // 扫描范围过大
-        if (yRange > 25 || xzRange > 50 || yRange * xzRange > 32767) {
+        if (yRange > 25 || xzRange > 50 || yRange * xzRange * xzRange > 32767) {
             event.getPlayer().sendMessage("[" + pluginName + "] 无法分类，请调小参数再试！");
             event.getPlayer().sendMessage("[" + pluginName + "] yRange<=25, xzRange<=50, volume<=10000");
             event.setCancelled(true);
@@ -126,7 +131,7 @@ public class ChestInteract implements Listener {
                 }
 
         event.getPlayer().sendMessage("[" + pluginName + "] 移动了" + count + "个物品");
-        MineChest.getPlugin().getLogger().info(event.getPlayer().getName() + "移动了" + count + "个物品");
+        plugin.getLogger().info(event.getPlayer().getName() + "移动了" + count + "个物品");
     }
 
     // 获取附着在箱子正面的告示牌
@@ -135,9 +140,12 @@ public class ChestInteract implements Listener {
             return null;
         if (!(chest.getBlockData() instanceof Directional))
             return null;
-        BlockFace face = ((Directional) chest.getBlockData()).getFacing();
-        Block block = chest.getBlock().getRelative(face);
+
+        Block block = getFacingBlock(chest.getBlock());
         if (block.getType() != Material.OAK_WALL_SIGN)
+            return null;
+        // 告示牌是贴在箱子上的，而不是贴在其他方块上其他方块
+        if(!getOppositeFacingBlock(block).getLocation().equals(chest.getLocation()))
             return null;
         return (Sign) block.getState();
     }
@@ -217,5 +225,14 @@ public class ChestInteract implements Listener {
         from.setContents(fromContents);
         to.setContents(toContents);
         return count;
+    }
+
+    private Block getFacingBlock(Block block){
+        BlockFace face = ((Directional) block.getBlockData()).getFacing();
+        return block.getRelative(face);
+    }
+    private Block getOppositeFacingBlock(Block block){
+        BlockFace face = ((Directional) block.getBlockData()).getFacing();
+        return block.getRelative(face.getOppositeFace());
     }
 }
