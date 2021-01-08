@@ -3,7 +3,6 @@ package com.github.errcodex.MineChest.Listener;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.Chest;
 import org.bukkit.block.Sign;
 import org.bukkit.block.data.Directional;
 import org.bukkit.event.EventHandler;
@@ -16,11 +15,15 @@ import org.bukkit.plugin.Plugin;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import static com.github.errcodex.MineChest.Tools.*;
+
 public class SignInteract implements Listener {
     private static Plugin plugin;
-    public SignInteract(Plugin plugin){
-        SignInteract.plugin=plugin;
+
+    public SignInteract(Plugin plugin) {
+        SignInteract.plugin = plugin;
     }
+
     @EventHandler
     public void onPlayerInteract(final PlayerInteractEvent event) {
         // 棍子触发
@@ -29,7 +32,7 @@ public class SignInteract implements Listener {
 
         // 触发附着在物体上的告示牌
         Block targetBlock = event.getClickedBlock();
-        if (null == targetBlock || targetBlock.getType() != Material.OAK_WALL_SIGN)
+        if (null == targetBlock || !(targetBlock.getState() instanceof Sign))
             return;
 
         Sign sign = (Sign) targetBlock.getState();
@@ -41,10 +44,9 @@ public class SignInteract implements Listener {
         }
 
         // 附着在箱子上
-        Chest chest = getChest(sign);
-        if (null == chest) return;
+        Inventory inventory = getWallChestInventory(sign, event);
+        if (null == inventory) return;
 
-        Inventory inventory = chest.getInventory();
         ItemStack[] contents = inventory.getContents();
         int lineNum = 0;
         for (ItemStack itemStack : contents) {
@@ -63,21 +65,18 @@ public class SignInteract implements Listener {
             sign.setLine(i, text.get(i));
         }
         if (tip.isEmpty()) return;
-        tip=tip.substring(3);
-        event.getPlayer().sendMessage("[MineChest] 你向告示牌上写了\"" + tip + "\"");
-        plugin.getLogger().info(event.getPlayer().getName() + "向告示牌上写了\"" + tip + "\"");
+        tip = tip.substring(3);
+        event.getPlayer().sendMessage("[MineChest] You wrote \"" + tip + "\" on the sign");
+        plugin.getLogger().info(event.getPlayer().getName() + " wrote\"" + tip + "\" on the sign");
         sign.update();
     }
 
     // 获取sign在哪个箱子上
-    private Chest getChest(Sign sign) {
+    private Inventory getWallChestInventory(Sign sign, final PlayerInteractEvent event) {
         if (null == sign) return null;
         BlockFace face = ((Directional) sign.getBlockData()).getFacing();
 
         Block block = sign.getBlock().getRelative(face.getOppositeFace());
-        if (block.getType() != Material.CHEST)
-            return null;
-
-        return (Chest) block.getState();
+        return getBlockInventory(block, event);
     }
 }

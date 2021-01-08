@@ -24,8 +24,11 @@ public class MineChest extends JavaPlugin implements Listener {
         SignInteract signInteract = new SignInteract(plugin);
 
         pluginManager.registerEvents(this, this);
+        // 自动整理
         pluginManager.registerEvents(chestOpen, this);
+        // 自动分类
         pluginManager.registerEvents(chestInteract, this);
+        // 木牌自动填写
         pluginManager.registerEvents(signInteract, this);
 
         getLogger().info(pluginName + " loaded!");

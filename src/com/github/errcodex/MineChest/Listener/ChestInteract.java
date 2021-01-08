@@ -17,9 +17,13 @@ import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.github.errcodex.MineChest.Tools.*;
+
 public class ChestInteract implements Listener {
     private static final String pluginName = "MineChest";
     static final String classificationTag = "分类";
+    static final String classificationTagEN = "classify";
+
     private static Plugin plugin;
 
     public ChestInteract(Plugin plugin) {
@@ -34,30 +38,35 @@ public class ChestInteract implements Listener {
 
         // 触发箱子
         Block targetBlock = event.getClickedBlock();
-        if (null == targetBlock || targetBlock.getType() != Material.CHEST)
+        if (null == targetBlock || !isChest(targetBlock))
             return;
 
-        Chest chest = (Chest) targetBlock.getState();
-        Inventory inventory = chest.getInventory();
+        Inventory inventory = getBlockInventory(targetBlock, event);
 
         // 防止重复寻找箱子，当扫描到大箱子时，把另一半箱子的坐标加入进来
         ArrayList<Location> visited = new ArrayList<Location>();
 
         // 将触发箱子放入无效箱子队列中
-        visited.add(chest.getLocation());
-        // 获得触发箱子的另一半（如果是大箱子）
-        Chest another = getAnotherChest(chest);
-        if (null != another)
-            visited.add(another.getLocation());
+        visited.add(targetBlock.getLocation());
+
+        // 普通箱子则检测是否为双箱
+        Block another = null;
+        if (targetBlock.getType() == Material.CHEST) {
+            Chest chest = (Chest) targetBlock.getState();
+            // 获得触发箱子的另一半（如果是大箱子）
+            another = getAnotherChestBlock(chest);
+            if (null != another)
+                visited.add(another.getLocation());
+        }
 
         int yRange = 0;
         int xzRange = 0;
 
         // 箱子上是否有符合的告示牌，"[分类]\n[yRange,xzRange]"
-        ArrayList<String> signText = getSignText(getWallSign(chest));
-        if (null == signText || signText.size() < 2 || !signText.get(0).equals(classificationTag)) {
+        ArrayList<String> signText = getSignText(getWallSign(targetBlock));
+        if (null == signText || signText.size() < 2 || !checkClassifyTag(signText.get(0))) {
             signText = getSignText(getWallSign(another));
-            if (null == signText || signText.size() < 2 || !signText.get(0).equals(classificationTag))
+            if (null == signText || signText.size() < 2 || !checkClassifyTag(signText.get(0)))
                 return;
         }
 
@@ -65,7 +74,7 @@ public class ChestInteract implements Listener {
         Pattern pattern = Pattern.compile("(\\d+),(\\d+)");
         Matcher m = pattern.matcher(signText.get(1));
         if (!m.find()) {
-            event.getPlayer().sendMessage("[" + pluginName + "] 参数错误，格式应为\"[yRange,xzRange]\"");
+            event.getPlayer().sendMessage("[" + pluginName + "] error parameters，The format should be \"[yRange,xzRange]\"");
             event.setCancelled(true);
             return;
         }
@@ -73,18 +82,19 @@ public class ChestInteract implements Listener {
         xzRange = Math.abs(Integer.parseInt(m.group(2)));
         // 扫描范围过大
         if (yRange > 25 || xzRange > 50 || yRange * xzRange * xzRange > 32767) {
-            event.getPlayer().sendMessage("[" + pluginName + "] 无法分类，请调小参数再试！");
+            event.getPlayer().sendMessage("[" + pluginName + "] error parameters！");
             event.getPlayer().sendMessage("[" + pluginName + "] yRange<=25, xzRange<=50, volume<=10000");
             event.setCancelled(true);
             return;
         }
 
         //检测通过，进入自动分类
-        event.getPlayer().sendMessage("[" + pluginName + "] (yRange:" + yRange + ", xzRange:" + xzRange + ")正在分类中...");
+        event.getPlayer().sendMessage("[" + pluginName + "] (yRange:" + yRange + ", xzRange:" + xzRange + ")classifying...");
         event.setCancelled(true);
         int count = 0; // 分类物品的数量
 
-        Location inventoryLocation = inventory.getLocation();
+        long startTime = System.currentTimeMillis();
+        Location inventoryLocation = targetBlock.getLocation();
         World world = event.getPlayer().getWorld();
         for (int y = inventoryLocation.getBlockY() - yRange; y <= inventoryLocation.getBlockY() + yRange; ++y)
             for (int x = inventoryLocation.getBlockX() - xzRange; x <= inventoryLocation.getBlockX() + xzRange; ++x)
@@ -93,21 +103,24 @@ public class ChestInteract implements Listener {
 
                     if (block.isEmpty())
                         continue;
-                    if (block.getType() != Material.CHEST)
+                    if (!isChest(block))
                         continue;
                     if (visited.contains(block.getLocation()))
                         continue;
 
-                    Chest itChest = (Chest) block.getState();
-                    Inventory itInventory = itChest.getInventory();
-
-                    Chest chestAnother = getAnotherChest(itChest);
-                    // 双箱则只检测一个箱子
-                    if (null != chestAnother)
-                        visited.add(chestAnother.getLocation());
+                    // 普通箱子则检测是否为双箱
+                    Block chestAnother = null;
+                    if (block.getType() == Material.CHEST) {
+                        Chest itChest = (Chest) block.getState();
+                        chestAnother = getAnotherChestBlock(itChest);
+                        // 双箱则只检测一个箱子
+                        if (null != chestAnother)
+                            visited.add(chestAnother.getLocation());
+                    }
+                    Inventory itInventory = getBlockInventory(block, event);
 
                     //箱子上的告示牌
-                    Sign wall_sign = getWallSign(itChest);
+                    Sign wall_sign = getWallSign(block);
                     if (null == wall_sign) {
                         wall_sign = getWallSign(chestAnother);
                         if (null == wall_sign) continue;
@@ -116,7 +129,7 @@ public class ChestInteract implements Listener {
                     // 分类存放的箱子必须有分类标签，并且第一行不能是"[分类]"
                     ArrayList<String> names = getSignText(wall_sign);
                     if (null == names || names.isEmpty()) continue;
-                    if (names.get(0).equals(classificationTag)) continue;
+                    if (checkClassifyTag(names.get(0))) continue;
 
 
                     ItemStack[] contents = itInventory.getContents();
@@ -124,33 +137,32 @@ public class ChestInteract implements Listener {
                     for (String name : names) {
                         Material material = Material.matchMaterial(name);
                         if (null == material) continue;
-                        count += chestSort(inventory, itInventory, material);
-                        //getLogger().info("分类: " + name);
+                        count += chestClassify(inventory, itInventory, material);
                     }
-
                 }
-
-        event.getPlayer().sendMessage("[" + pluginName + "] 移动了" + count + "个物品");
-        plugin.getLogger().info(event.getPlayer().getName() + "移动了" + count + "个物品");
+        long usedTime = System.currentTimeMillis() - startTime;
+        event.getPlayer().sendMessage("[" + pluginName + "] you moved " + count + " items, used " + usedTime + "ms");
+        plugin.getLogger().info(event.getPlayer().getName() + " moved " + count + " items, used " + usedTime + "ms");
     }
 
     // 获取附着在箱子正面的告示牌
-    private Sign getWallSign(Chest chest) {
-        if (null == chest)
+    private Sign getWallSign(Block block) {
+
+        if (null == block)
             return null;
-        if (!(chest.getBlockData() instanceof Directional))
+        if (!(block.getBlockData() instanceof Directional))
             return null;
 
-        Block block = getFacingBlock(chest.getBlock());
-        if (block.getType() != Material.OAK_WALL_SIGN)
+        Block facingBlock = getFacingBlock(block);
+        if (!(facingBlock.getState() instanceof Sign))
             return null;
         // 告示牌是贴在箱子上的，而不是贴在其他方块上其他方块
-        if(!getOppositeFacingBlock(block).getLocation().equals(chest.getLocation()))
+        if (!getOppositeFacingBlock(facingBlock).getLocation().equals(block.getLocation()))
             return null;
-        return (Sign) block.getState();
+        return (Sign) facingBlock.getState();
     }
 
-    private Chest getAnotherChest(Chest chest) {
+    private Block getAnotherChestBlock(Chest chest) {
         Inventory inventory = chest.getInventory();
         InventoryHolder holder = inventory.getHolder();
         if (holder instanceof DoubleChest) {
@@ -159,9 +171,9 @@ public class ChestInteract implements Listener {
             Chest cRight = (Chest) doubleChest.getRightSide();
 
             if (cLeft.getLocation().equals(chest.getLocation()))
-                return cRight;
+                return cRight.getBlock();
             else
-                return cLeft;
+                return cLeft.getBlock();
         }
         return null;
     }
@@ -184,7 +196,7 @@ public class ChestInteract implements Listener {
     }
 
     // 自动分类
-    private int chestSort(Inventory from, Inventory to, Material material) {
+    private int chestClassify(Inventory from, Inventory to, Material material) {
         int count = 0;
         ItemStack[] fromContents = from.getContents();
         ItemStack[] toContents = to.getContents();
@@ -218,8 +230,9 @@ public class ChestInteract implements Listener {
                 }
 
                 toItemStack.setAmount(fromItemStack.getAmount() + toItemStack.getAmount());
-                fromContents[j] = null;
+                fromContents[i] = null;
                 count += fromItemStack.getAmount();
+                break;
             }
         }
         from.setContents(fromContents);
@@ -227,12 +240,19 @@ public class ChestInteract implements Listener {
         return count;
     }
 
-    private Block getFacingBlock(Block block){
+    private Block getFacingBlock(Block block) {
         BlockFace face = ((Directional) block.getBlockData()).getFacing();
         return block.getRelative(face);
     }
-    private Block getOppositeFacingBlock(Block block){
+
+    private Block getOppositeFacingBlock(Block block) {
         BlockFace face = ((Directional) block.getBlockData()).getFacing();
         return block.getRelative(face.getOppositeFace());
+    }
+
+    private Boolean checkClassifyTag(String text) {
+        if (!text.equals(classificationTag) && !text.equals(classificationTagEN))
+            return false;
+        return true;
     }
 }

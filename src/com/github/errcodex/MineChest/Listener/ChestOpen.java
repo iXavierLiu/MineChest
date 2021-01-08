@@ -11,16 +11,15 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 
+import static com.github.errcodex.MineChest.Tools.isChest;
+
 public class ChestOpen implements Listener {
     @EventHandler
     public void onInventoryOpen(InventoryOpenEvent event) {
         Inventory inventory = event.getInventory();
-
         InventoryType inventoryType = inventory.getType();
-        if (inventoryType != InventoryType.CHEST &&
-                inventoryType != InventoryType.SHULKER_BOX &&
-                inventoryType != InventoryType.ENDER_CHEST) return;
-
+        if (!isChest(inventory))
+            return;
 
         ItemStack[] contents = inventory.getContents();
         // combine same block
