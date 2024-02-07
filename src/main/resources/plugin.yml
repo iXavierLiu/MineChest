@@ -1,0 +1,5 @@
+name: MineChest
+author: XavierLiu
+main: io.xavierliu.mc.minechest.App
+version: 0.1
+description: hello world
