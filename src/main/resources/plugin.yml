@@ -1,5 +1,6 @@
 name: MineChest
 author: XavierLiu
+version: 1.0-beta
+api-version: 1.20
+website: https://github.com/iXavierLiu/MineChest/
 main: io.xavierliu.mc.minechest.App
-version: 0.1
-description: hello world

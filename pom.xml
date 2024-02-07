@@ -7,7 +7,7 @@
 
   <groupId>io.xavierliu.mc.minechest</groupId>
   <artifactId>MineChest</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0-beta</version>
 
   <name>MineChest</name>
   <!-- FIXME change it to the project's website -->
