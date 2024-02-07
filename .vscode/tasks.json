@@ -1,0 +1,32 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build Plugin",
+			"command":"mvn",
+			"args": [
+				"install",
+				"-f",
+				"${workspaceFolder}/pom.xml"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			}
+		},
+		{
+			"label": "Install Plugin",
+			"type":"shell",
+			"command":"cp",
+			"args": [
+				"${workspaceFolder}/target/*.jar",
+				"${serverDir}/plugins"
+			],
+			"options": {
+				"env": {
+					"serverDir":"${workspaceFolder}/../../minecraft/server"
+				}
+			},
+			"dependsOn":["Build Plugin"]
+		}
+	]
+}
