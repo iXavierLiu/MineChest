@@ -1,4 +1,9 @@
 # MineChest
+
+![bukkit download](https://img.shields.io/curseforge/dt/428814?label=bukkit%20download)
+![latest](https://img.shields.io/badge/latest-v1.0.0--beta-blue)
+![mc](https://img.shields.io/badge/mc-1.20.4-blue)
+
 README | [中文文档](README_zh-CN.md)
 
 ## What is MineChest
